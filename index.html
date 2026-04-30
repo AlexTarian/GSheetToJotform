@@ -7,12 +7,26 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="widget-shell">
-    <div id="statusIcon" class="status-icon">⏳</div>
-    <div>
-      <div id="statusTitle" class="status-title">Loading case data...</div>
-      <div id="statusMessage" class="status-message">
-        Please wait while employer data is retrieved.
+  <div class="widget-shell" id="widgetShell">
+    <div id="inputSection" class="input-section">
+      <label for="caseInput">Case Number</label>
+
+      <div class="input-row">
+        <input id="caseInput" type="text" placeholder="H-300-XXXXX-XXXXXX" />
+        <button id="searchBtn" type="button">
+          <span id="buttonText">Search</span>
+          <span id="buttonSpinner" class="button-spinner hidden"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="status-row">
+      <div id="statusIcon" class="status-icon">ℹ️</div>
+      <div>
+        <div id="statusTitle" class="status-title">Ready</div>
+        <div id="statusMessage" class="status-message">
+          Enter a case number or load one from the form URL.
+        </div>
       </div>
     </div>
   </div>
