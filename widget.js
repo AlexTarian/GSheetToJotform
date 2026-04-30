@@ -1,32 +1,85 @@
 (function () {
   const DEFAULT_ACTION = 'lookupcase';
 
+  let widgetSettings = {};
+
   JFCustomWidget.subscribe('ready', async function () {
     try {
-      setStatus('loading', 'Loading case data...', 'Please wait while employer data is retrieved.');
+      widgetSettings = normalizeSettings_(await getWidgetSettings_());
 
-      const settings = await getWidgetSettings_();
+      configureMode_(widgetSettings.mode);
 
-      const lookupEndpoint = clean_(settings.lookupEndpoint);
-      const token = clean_(settings.token);
-      const caseParamName = clean_(settings.caseParamName) || 'caseNumber';
+      const autoCaseNumber = getCaseNumberFromUrl_(widgetSettings.caseParamName);
 
-      const caseNumber = getQueryParam_(caseParamName) || getQueryParam_('case') || getQueryParam_('caseNumber');
+      bindEvents_();
+
+      if (autoCaseNumber) {
+        document.getElementById('caseInput').value = autoCaseNumber;
+        await runLookup_(autoCaseNumber);
+        return;
+      }
+
+      if (widgetSettings.mode === 'auto') {
+        setStatus_(
+          'warning',
+          'No case number found',
+          `Expected a URL parameter named "${widgetSettings.caseParamName}".`
+        );
+        return;
+      }
+
+      setStatus_(
+        'ready',
+        'Ready',
+        'Enter a case number and click Search.'
+      );
+
+    } catch (err) {
+      console.error(err);
+      setStatus_('error', 'Widget error', getErrorMessage_(err));
+    }
+  });
+
+  function bindEvents_() {
+    const searchBtn = document.getElementById('searchBtn');
+    const caseInput = document.getElementById('caseInput');
+
+    searchBtn.addEventListener('click', async function () {
+      const caseNumber = clean_(caseInput.value);
+
+      if (!caseNumber) {
+        setStatus_('warning', 'Missing case number', 'Enter a case number before searching.');
+        return;
+      }
+
+      await runLookup_(caseNumber);
+    });
+
+    caseInput.addEventListener('keydown', async function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        searchBtn.click();
+      }
+    });
+  }
+
+  async function runLookup_(caseNumber) {
+    try {
+      const lookupEndpoint = clean_(widgetSettings.lookupEndpoint);
+      const token = clean_(widgetSettings.token);
 
       if (!lookupEndpoint) {
-        setStatus('error', 'Missing lookup endpoint', 'Add the Apps Script web app URL in the widget settings.');
+        setStatus_('error', 'Missing lookup endpoint', 'Add the Apps Script web app URL in the widget settings.');
         return;
       }
 
       if (!token) {
-        setStatus('error', 'Missing token', 'Add the lookup token in the widget settings.');
+        setStatus_('error', 'Missing token', 'Add the lookup token in the widget settings.');
         return;
       }
 
-      if (!caseNumber) {
-        setStatus('warning', 'No case number found', `Expected a URL parameter named "${caseParamName}".`);
-        return;
-      }
+      setLoading_(true);
+      setStatus_('loading', 'Searching...', `Looking up case ${caseNumber}.`);
 
       const lookupUrl = buildLookupUrl_(lookupEndpoint, {
         action: DEFAULT_ACTION,
@@ -40,25 +93,29 @@
       });
 
       if (!response.ok) {
-        setStatus('error', 'Lookup request failed', `Server returned HTTP ${response.status}.`);
+        setStatus_('error', 'Lookup request failed', `Server returned HTTP ${response.status}.`);
         return;
       }
 
       const data = await response.json();
 
       if (!data || !data.ok) {
-        setStatus('error', 'Case lookup failed', data && data.error ? data.error : 'Unknown lookup error.');
+        setStatus_('error', 'Case lookup failed', data && data.error ? data.error : 'Unknown lookup error.');
         return;
       }
 
       if (!Array.isArray(data.fields) || data.fields.length === 0) {
-        setStatus('warning', 'Case found, but no fields returned', `Case ${caseNumber} was found, but no mapped values were returned.`);
+        setStatus_(
+          'warning',
+          'Case found, but no fields returned',
+          `Case ${data.caseNumber || caseNumber} was found, but no mapped values were returned.`
+        );
         return;
       }
 
       JFCustomWidget.setFieldsValueByLabel(data.fields);
 
-      setStatus(
+      setStatus_(
         'success',
         'Employer data loaded',
         `Loaded ${data.fields.length} field${data.fields.length === 1 ? '' : 's'} for case ${data.caseNumber || caseNumber}.`
@@ -71,9 +128,12 @@
 
     } catch (err) {
       console.error(err);
-      setStatus('error', 'Widget error', err && err.message ? err.message : String(err));
+      setStatus_('error', 'Lookup error', getErrorMessage_(err));
+    } finally {
+      setLoading_(false);
+      JFCustomWidget.requestFrameResize();
     }
-  });
+  }
 
   function getWidgetSettings_() {
     return new Promise(function (resolve) {
@@ -83,7 +143,39 @@
     });
   }
 
+  function normalizeSettings_(settings) {
+    return {
+      lookupEndpoint: clean_(settings.lookupEndpoint),
+      token: clean_(settings.token),
+      caseParamName: clean_(settings.caseParamName) || 'caseNumber',
+      mode: clean_(settings.mode).toLowerCase() || 'manual'
+    };
+  }
+
+  function configureMode_(mode) {
+    const inputSection = document.getElementById('inputSection');
+
+    if (mode === 'auto' || mode === 'hidden') {
+      inputSection.classList.add('hidden');
+    } else {
+      inputSection.classList.remove('hidden');
+    }
+
+    JFCustomWidget.requestFrameResize();
+  }
+
+  function getCaseNumberFromUrl_(preferredParamName) {
+    return (
+      getQueryParam_(preferredParamName) ||
+      getQueryParam_('caseNumber') ||
+      getQueryParam_('case') ||
+      getQueryParam_('caseNum')
+    );
+  }
+
   function getQueryParam_(name) {
+    if (!name) return '';
+
     const params = new URLSearchParams(window.location.search);
     return clean_(params.get(name));
   }
@@ -98,12 +190,21 @@
     return url.toString();
   }
 
-  function clean_(value) {
-    return String(value || '').trim();
+  function setLoading_(isLoading) {
+    const searchBtn = document.getElementById('searchBtn');
+    const caseInput = document.getElementById('caseInput');
+    const buttonText = document.getElementById('buttonText');
+    const buttonSpinner = document.getElementById('buttonSpinner');
+
+    searchBtn.disabled = isLoading;
+    caseInput.disabled = isLoading;
+
+    buttonText.textContent = isLoading ? 'Searching' : 'Search';
+    buttonSpinner.classList.toggle('hidden', !isLoading);
   }
 
-  function setStatus(type, title, message) {
-    const shell = document.querySelector('.widget-shell');
+  function setStatus_(type, title, message) {
+    const shell = document.getElementById('widgetShell');
     const icon = document.getElementById('statusIcon');
     const titleEl = document.getElementById('statusTitle');
     const messageEl = document.getElementById('statusMessage');
@@ -111,6 +212,7 @@
     shell.className = `widget-shell ${type || ''}`;
 
     const icons = {
+      ready: 'ℹ️',
       loading: '⏳',
       success: '✅',
       warning: '⚠️',
@@ -122,5 +224,13 @@
     messageEl.textContent = message || '';
 
     JFCustomWidget.requestFrameResize();
+  }
+
+  function clean_(value) {
+    return String(value || '').trim();
+  }
+
+  function getErrorMessage_(err) {
+    return err && err.message ? err.message : String(err);
   }
 })();
