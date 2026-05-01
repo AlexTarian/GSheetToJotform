@@ -5,39 +5,25 @@
 
   JFCustomWidget.subscribe('ready', async function () {
     try {
+      bindEvents_(); // move this FIRST
+
+      setStatus_('ready', 'Ready', 'Enter a case number and click Search.');
+
       widgetSettings = normalizeSettings_(await getWidgetSettings_());
 
       configureMode_(widgetSettings.mode);
 
       const autoCaseNumber = getCaseNumberFromUrl_(widgetSettings.caseParamName);
 
-      bindEvents_();
-
       if (autoCaseNumber) {
         document.getElementById('caseInput').value = autoCaseNumber;
         await runLookup_(autoCaseNumber);
-        return;
       }
-
-      if (widgetSettings.mode === 'auto') {
-        setStatus_(
-          'warning',
-          'No case number found',
-          `Expected a URL parameter named "${widgetSettings.caseParamName}".`
-        );
-        return;
-      }
-
-      setStatus_(
-        'ready',
-        'Ready',
-        'Enter a case number and click Search.'
-      );
 
     } catch (err) {
       console.error(err);
       setStatus_('error', 'Widget error', getErrorMessage_(err));
-    }
+   }
   });
 
   function bindEvents_() {
