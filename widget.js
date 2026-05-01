@@ -26,28 +26,40 @@
    }
   });
 
-  function bindEvents_() {
-    const searchBtn = document.getElementById('searchBtn');
-    const caseInput = document.getElementById('caseInput');
+ let eventsBound = false;
 
-    searchBtn.addEventListener('click', async function () {
-      const caseNumber = clean_(caseInput.value);
+function bindEvents_() {
+  if (eventsBound) return;
+  eventsBound = true;
 
-      if (!caseNumber) {
-        setStatus_('warning', 'Missing case number', 'Enter a case number before searching.');
-        return;
-      }
+  const searchBtn = document.getElementById('searchBtn');
+  const caseInput = document.getElementById('caseInput');
 
-      await runLookup_(caseNumber);
-    });
-
-    caseInput.addEventListener('keydown', async function (event) {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        searchBtn.click();
-      }
-    });
+  if (!searchBtn || !caseInput) {
+    console.error('Missing search button or case input.');
+    return;
   }
+
+  searchBtn.addEventListener('click', async function () {
+    console.log('Search clicked');
+
+    const caseNumber = clean_(caseInput.value);
+
+    if (!caseNumber) {
+      setStatus_('warning', 'Missing case number', 'Enter a case number before searching.');
+      return;
+    }
+
+    await runLookup_(caseNumber);
+  });
+
+  caseInput.addEventListener('keydown', async function (event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      searchBtn.click();
+    }
+  });
+}
 
   async function runLookup_(caseNumber) {
     try {
@@ -72,6 +84,8 @@
         caseNumber,
         token
       });
+
+      console.log('Lookup URL:', lookupUrl);
 
       const response = await fetch(lookupUrl, {
         method: 'GET',
