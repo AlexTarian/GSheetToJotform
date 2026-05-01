@@ -13,7 +13,10 @@
 
       configureMode_(widgetSettings.mode);
 
-      const autoCaseNumber = getCaseNumberFromUrl_(widgetSettings.keyParamName);
+      const widgetValue = await getPrefilledWidgetValue_();
+      const urlValue = getCaseNumberFromUrl_(widgetSettings.keyParamName);
+
+      const autoCaseNumber = widgetValue || urlValue;
 
       if (autoCaseNumber) {
         document.getElementById('caseInput').value = autoCaseNumber;
@@ -127,6 +130,20 @@ function bindEvents_() {
     } finally {
       setLoading_(false);
     }
+  }
+
+  function getPrefilledWidgetValue_() {
+    return new Promise((resolve) => {
+      try {
+        JFCustomWidget.getWidgetValue(function (value) {
+          console.log('Prefilled widget value:', value);
+          resolve(clean_(value));
+        });
+      } catch (err) {
+        console.warn('Error reading widget value:', err);
+        resolve('');
+      }
+    });
   }
 
 function getWidgetSettings_() {
