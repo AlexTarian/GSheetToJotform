@@ -143,13 +143,14 @@ function bindEvents_() {
   }
 }
 
-  function getWidgetSettings_() {
-    return new Promise(function (resolve) {
-      JFCustomWidget.getWidgetSettings(function (settings) {
-        resolve(settings || {});
-      });
+function getWidgetSettings_() {
+  return new Promise(function (resolve) {
+    JFCustomWidget.getWidgetSettings(function (settings) {
+      console.log('Raw widget settings:', settings);
+      resolve(settings || {});
     });
-  }
+  });
+}
 
   function normalizeSettings_(settings) {
     return {
