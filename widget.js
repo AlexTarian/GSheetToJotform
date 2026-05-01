@@ -107,19 +107,27 @@
         `Loaded ${data.fields.length} field${data.fields.length === 1 ? '' : 's'} for case ${data.caseNumber || caseNumber}.`
       );
 
-      JFCustomWidget.sendSubmit({
-        valid: true,
-        value: data.caseNumber || caseNumber
-      });
-
     } catch (err) {
       console.error(err);
       setStatus_('error', 'Lookup error', getErrorMessage_(err));
     } finally {
       setLoading_(false);
-      JFCustomWidget.requestFrameResize();
+      requestResize_();
     }
   }
+
+  function requestResize_() {
+  try {
+    if (
+      window.JFCustomWidget &&
+      typeof JFCustomWidget.requestFrameResize === 'function'
+    ) {
+      JFCustomWidget.requestFrameResize();
+    }
+  } catch (err) {
+    console.warn('Resize skipped:', err);
+  }
+}
 
   function getWidgetSettings_() {
     return new Promise(function (resolve) {
@@ -147,7 +155,7 @@
       inputSection.classList.remove('hidden');
     }
 
-    JFCustomWidget.requestFrameResize();
+    requestResize_();
   }
 
   function getCaseNumberFromUrl_(preferredParamName) {
@@ -209,7 +217,7 @@
     titleEl.textContent = title || '';
     messageEl.textContent = message || '';
 
-    JFCustomWidget.requestFrameResize();
+    requestResize_();
   }
 
   function clean_(value) {
