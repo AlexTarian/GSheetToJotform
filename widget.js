@@ -7,7 +7,7 @@
     try {
       bindEvents_(); // move this FIRST
 
-      setStatus_('ready', 'Ready', 'Enter a case number and click Search.');
+      setStatus_('ready', 'Ready', 'Enter a search key and click Search.');
 
       widgetSettings = normalizeSettings_(await getWidgetSettings_());
 
