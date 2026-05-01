@@ -46,7 +46,7 @@ function bindEvents_() {
     const caseNumber = clean_(caseInput.value);
 
     if (!caseNumber) {
-      setStatus_('warning', 'Missing case number', 'Enter a case number before searching.');
+      setStatus_('warning', 'Missing Key', 'Enter a key before searching.');
       return;
     }
 
@@ -100,15 +100,15 @@ function bindEvents_() {
       const data = await response.json();
 
       if (!data || !data.ok) {
-        setStatus_('error', 'Case lookup failed', data && data.error ? data.error : 'Unknown lookup error.');
+        setStatus_('error', 'Key lookup failed', data && data.error ? data.error : 'Unknown lookup error.');
         return;
       }
 
       if (!Array.isArray(data.fields) || data.fields.length === 0) {
         setStatus_(
           'warning',
-          'Case found, but no fields returned',
-          `Case ${data.caseNumber || caseNumber} was found, but no mapped values were returned.`
+          'Row found, but no fields returned',
+          `Row ${data.caseNumber || caseNumber} was found, but no mapped values were returned.`
         );
         return;
       }
@@ -117,7 +117,7 @@ function bindEvents_() {
 
       setStatus_(
         'success',
-        'Employer data loaded',
+        'Data Loaded Successfully',
         `Loaded ${data.fields.length} field${data.fields.length === 1 ? '' : 's'} for case ${data.caseNumber || caseNumber}.`
       );
 
