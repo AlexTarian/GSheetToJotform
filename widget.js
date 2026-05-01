@@ -130,12 +130,26 @@ function bindEvents_() {
   }
 
 function getWidgetSettings_() {
-  return new Promise(function (resolve) {
-    JFCustomWidget.getWidgetSettings(function (settings) {
-      console.log('Raw widget settings:', settings);
-      resolve(settings || {});
-    });
-  });
+  const settings = {
+    lookupEndpoint: getSetting_('lookupEndpoint'),
+    token: getSetting_('token'),
+    keyParamName: getSetting_('keyParamName') || 'caseNumber',
+    mode: getSetting_('mode') || 'manual'
+  };
+
+  console.log('Widget settings:', settings);
+  return Promise.resolve(settings);
+}
+
+function getSetting_(name) {
+  try {
+    const value = JFCustomWidget.getWidgetSetting(name);
+    console.log(`Setting ${name}:`, value);
+    return clean_(value);
+  } catch (err) {
+    console.warn(`Could not read setting ${name}:`, err);
+    return '';
+  }
 }
 
   function normalizeSettings_(settings) {
