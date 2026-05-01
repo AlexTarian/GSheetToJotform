@@ -126,22 +126,8 @@ function bindEvents_() {
       setStatus_('error', 'Lookup error', getErrorMessage_(err));
     } finally {
       setLoading_(false);
-      requestResize_();
     }
   }
-
-  function requestResize_() {
-  try {
-    if (
-      window.JFCustomWidget &&
-      typeof JFCustomWidget.requestFrameResize === 'function'
-    ) {
-      JFCustomWidget.requestFrameResize();
-    }
-  } catch (err) {
-    console.warn('Resize skipped:', err);
-  }
-}
 
 function getWidgetSettings_() {
   return new Promise(function (resolve) {
@@ -170,7 +156,6 @@ function getWidgetSettings_() {
       inputSection.classList.remove('hidden');
     }
 
-    requestResize_();
   }
 
   function getCaseNumberFromUrl_(preferredParamName) {
@@ -232,7 +217,6 @@ function getWidgetSettings_() {
     titleEl.textContent = title || '';
     messageEl.textContent = message || '';
 
-    requestResize_();
   }
 
   function clean_(value) {
