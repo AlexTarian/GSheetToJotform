@@ -13,7 +13,7 @@
 
       configureMode_(widgetSettings.mode);
 
-      const autoCaseNumber = getCaseNumberFromUrl_(widgetSettings.caseParamName);
+      const autoCaseNumber = getCaseNumberFromUrl_(widgetSettings.keyParamName);
 
       if (autoCaseNumber) {
         document.getElementById('caseInput').value = autoCaseNumber;
@@ -155,7 +155,7 @@ function bindEvents_() {
     return {
       lookupEndpoint: clean_(settings.lookupEndpoint),
       token: clean_(settings.token),
-      caseParamName: clean_(settings.caseParamName) || 'caseNumber',
+      keyParamName: clean_(settings.keyParamName) || 'caseNumber',
       mode: clean_(settings.mode).toLowerCase() || 'manual'
     };
   }
