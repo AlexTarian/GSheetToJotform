@@ -13,24 +13,21 @@
 
       configureMode_(widgetSettings.mode);
 
-      const parentUrlValue = getKeyFromParentUrl_(widgetSettings.keyParamName);
-      const referrerValue = getCaseNumberFromParentReferrer_(widgetSettings.keyParamName);
-      const iframeUrlValue = getCaseNumberFromUrl_(widgetSettings.keyParamName);
-      const widgetValue = await getPrefilledWidgetValue_();
+const parentUrlValue = getKeyFromParentUrl_(widgetSettings.keyParamName);
+const referrerValue = getCaseNumberFromParentReferrer_(widgetSettings.keyParamName);
+const iframeUrlValue = getCaseNumberFromUrl_(widgetSettings.keyParamName);
 
-      const autoSearchKey =
-        parentUrlValue ||
-        referrerValue ||
-        iframeUrlValue ||
-        widgetValue;
+const autoSearchKey =
+  parentUrlValue ||
+  referrerValue ||
+  iframeUrlValue;
 
-      console.log('Auto lookup values:', {
-        parentUrlValue,
-        referrerValue,
-        iframeUrlValue,
-        widgetValue,
-        autoSearchKey
-      });
+console.log('Auto lookup values:', {
+  parentUrlValue,
+  referrerValue,
+  iframeUrlValue,
+  autoSearchKey
+});
 
       if (autoSearchKey) {
         document.getElementById('caseInput').value = autoSearchKey;
@@ -282,14 +279,15 @@ function getSetting_(name) {
 
   }
 
-  function getCaseNumberFromUrl_(preferredParamName) {
-    return (
-      getQueryParam_(preferredParamName) ||
-      getQueryParam_('caseNumber') ||
-      getQueryParam_('case') ||
-      getQueryParam_('caseNum')
-    );
-  }
+function getCaseNumberFromUrl_(preferredParamName) {
+  return (
+    getQueryParam_(preferredParamName) ||
+    getQueryParam_('caseNumber') ||
+    getQueryParam_('case') ||
+    getQueryParam_('caseNum') ||
+    getQueryParam_('key')
+  );
+}
 
   function getQueryParam_(name) {
     if (!name) return '';
