@@ -207,6 +207,7 @@
       lookupEndpoint: clean_(settings.lookupEndpoint),
       token: clean_(settings.token),
       keyParamName: clean_(settings.keyParamName) || 'caseNumber',
+      keyFieldId: clean_(settings.keyFieldId),
       mode: clean_(settings.mode).toLowerCase() || 'manual'
     };
   }
