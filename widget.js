@@ -18,7 +18,7 @@
       const iframeUrlValue = getCaseNumberFromUrl_(widgetSettings.keyParamName);
       const widgetValue = await getPrefilledWidgetValue_();
 
-      const autoCaseNumber =
+      const autoSearchKey =
         parentUrlValue ||
         referrerValue ||
         iframeUrlValue ||
@@ -29,7 +29,7 @@
         referrerValue,
         iframeUrlValue,
         widgetValue,
-        autoCaseNumber
+        autoSearchKey
       });
 
       if (autoSearchKey) {
