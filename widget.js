@@ -14,13 +14,21 @@
       configureMode_(widgetSettings.mode);
 
       const widgetValue = await getPrefilledWidgetValue_();
-      const urlValue = getCaseNumberFromUrl_(widgetSettings.keyParamName);
+      const referrerValue = getCaseNumberFromParentReferrer_(widgetSettings.keyParamName);
+      const iframeUrlValue = getCaseNumberFromUrl_(widgetSettings.keyParamName);
 
-      const autoCaseNumber = widgetValue || urlValue;
+      const autoSearchKey = widgetValue || referrerValue || iframeUrlValue;
 
-      if (autoCaseNumber) {
-        document.getElementById('caseInput').value = autoCaseNumber;
-        await runLookup_(autoCaseNumber);
+      console.log('Auto lookup values:', {
+        widgetValue,
+        referrerValue,
+        iframeUrlValue,
+        autoSearchKey
+      });
+
+      if (autoSearchKey) {
+        document.getElementById('caseInput').value = autoSearchKey;
+        await runLookup_(autoSearchKey);
       }
 
     } catch (err) {
@@ -132,18 +140,55 @@ function bindEvents_() {
     }
   }
 
-  function getPrefilledWidgetValue_() {
-    return new Promise((resolve) => {
-      try {
-        JFCustomWidget.getWidgetValue(function (value) {
-          console.log('Prefilled widget value:', value);
-          resolve(clean_(value));
-        });
-      } catch (err) {
-        console.warn('Error reading widget value:', err);
-        resolve('');
-      }
-    });
+function getPrefilledWidgetValue_() {
+  return new Promise((resolve) => {
+    let resolved = false;
+
+    const finish = (value) => {
+      if (resolved) return;
+      resolved = true;
+      resolve(clean_(value));
+    };
+
+    try {
+      JFCustomWidget.getWidgetValue(function (value) {
+        console.log('Prefilled widget value:', value);
+        finish(value);
+      });
+
+      setTimeout(function () {
+        console.warn('getWidgetValue timed out.');
+        finish('');
+      }, 500);
+    } catch (err) {
+      console.warn('Error reading widget value:', err);
+      finish('');
+    }
+  });
+}
+
+  function getCaseNumberFromParentReferrer_(preferredParamName) {
+    try {
+      const referrer = document.referrer;
+      console.log('Document referrer:', referrer);
+
+      if (!referrer) return '';
+
+      const url = new URL(referrer);
+      const params = new URLSearchParams(url.search);
+
+      return (
+        clean_(params.get(preferredParamName)) ||
+        clean_(params.get('caseNum')) ||
+        clean_(params.get('caseNumber')) ||
+        clean_(params.get('case')) ||
+        clean_(params.get('key')) ||
+        ''
+      );
+    } catch (err) {
+      console.warn('Could not read parent referrer:', err);
+      return '';
+    }
   }
 
 function getWidgetSettings_() {
