@@ -143,33 +143,6 @@ function bindEvents_() {
     }
   }
 
-function getPrefilledWidgetValue_() {
-  return new Promise((resolve) => {
-    let resolved = false;
-
-    const finish = (value) => {
-      if (resolved) return;
-      resolved = true;
-      resolve(clean_(value));
-    };
-
-    try {
-      JFCustomWidget.getWidgetValue(function (value) {
-        console.log('Prefilled widget value:', value);
-        finish(value);
-      });
-
-      setTimeout(function () {
-        console.warn('getWidgetValue timed out.');
-        finish('');
-      }, 500);
-    } catch (err) {
-      console.warn('Error reading widget value:', err);
-      finish('');
-    }
-  });
-}
-
   function getKeyFromParentUrl_(preferredParamName) {
   const names = [
     preferredParamName,
