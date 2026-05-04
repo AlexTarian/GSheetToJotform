@@ -2,10 +2,11 @@
   const DEFAULT_ACTION = 'lookupcase';
 
   let widgetSettings = {};
+  let eventsBound = false;
 
   JFCustomWidget.subscribe('ready', async function () {
     try {
-      bindEvents_(); // move this FIRST
+      bindEvents_();
 
       setStatus_('ready', 'Ready', 'Enter a search key and click Search.');
 
@@ -13,69 +14,56 @@
 
       configureMode_(widgetSettings.mode);
 
-const parentUrlValue = getKeyFromParentUrl_(widgetSettings.keyParamName);
-const referrerValue = getCaseNumberFromParentReferrer_(widgetSettings.keyParamName);
-const iframeUrlValue = getCaseNumberFromUrl_(widgetSettings.keyParamName);
+      const iframeUrlValue = getSearchKeyFromWidgetUrl_(widgetSettings.keyParamName);
 
-const autoSearchKey =
-  parentUrlValue ||
-  referrerValue ||
-  iframeUrlValue;
+      console.log('Auto lookup values:', {
+        iframeUrlValue
+      });
 
-console.log('Auto lookup values:', {
-  parentUrlValue,
-  referrerValue,
-  iframeUrlValue,
-  autoSearchKey
-});
-
-      if (autoSearchKey) {
-        document.getElementById('caseInput').value = autoSearchKey;
-        await runLookup_(autoSearchKey);
+      if (iframeUrlValue) {
+        document.getElementById('caseInput').value = iframeUrlValue;
+        await runLookup_(iframeUrlValue);
       }
-
     } catch (err) {
       console.error(err);
       setStatus_('error', 'Widget error', getErrorMessage_(err));
-   }
+    }
   });
 
- let eventsBound = false;
+  function bindEvents_() {
+    if (eventsBound) return;
+    eventsBound = true;
 
-function bindEvents_() {
-  if (eventsBound) return;
-  eventsBound = true;
+    const searchBtn = document.getElementById('searchBtn');
+    const caseInput = document.getElementById('caseInput');
 
-  const searchBtn = document.getElementById('searchBtn');
-  const caseInput = document.getElementById('caseInput');
-
-  if (!searchBtn || !caseInput) {
-    console.error('Missing search button or case input.');
-    return;
-  }
-
-  searchBtn.addEventListener('click', async function () {
-    console.log('Search clicked');
-
-    const caseNumber = clean_(caseInput.value);
-
-    if (!caseNumber) {
-      setStatus_('warning', 'Missing Key', 'Enter a key before searching.');
+    if (!searchBtn || !caseInput) {
+      console.error('Missing search button or case input.');
       return;
     }
 
-    await runLookup_(caseNumber);
-  });
+    searchBtn.addEventListener('click', async function () {
+      console.log('Search clicked');
 
-  caseInput.addEventListener('keydown', async function (event) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      searchBtn.click();
-    }
-  });
-}
+      const searchKey = clean_(caseInput.value);
 
-  async function runLookup_(caseNumber) {
+      if (!searchKey) {
+        setStatus_('warning', 'Missing Key', 'Enter a key before searching.');
+        return;
+      }
+
+      await runLookup_(searchKey);
+    });
+
+    caseInput.addEventListener('keydown', async function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        searchBtn.click();
+      }
+    });
+  }
+
+  async function runLookup_(searchKey) {
     try {
       const lookupEndpoint = clean_(widgetSettings.lookupEndpoint);
       const token = clean_(widgetSettings.token);
@@ -91,11 +79,11 @@ function bindEvents_() {
       }
 
       setLoading_(true);
-      setStatus_('loading', 'Searching...', `Looking up case ${caseNumber}.`);
+      setStatus_('loading', 'Searching...', `Looking up ${searchKey}.`);
 
       const lookupUrl = buildLookupUrl_(lookupEndpoint, {
         action: DEFAULT_ACTION,
-        caseNumber,
+        caseNumber: searchKey,
         token
       });
 
@@ -122,7 +110,7 @@ function bindEvents_() {
         setStatus_(
           'warning',
           'Row found, but no fields returned',
-          `Row ${data.caseNumber || caseNumber} was found, but no mapped values were returned.`
+          `Row ${data.caseNumber || searchKey} was found, but no mapped values were returned.`
         );
         return;
       }
@@ -132,9 +120,8 @@ function bindEvents_() {
       setStatus_(
         'success',
         'Data Loaded Successfully',
-        `Loaded ${data.fields.length} field${data.fields.length === 1 ? '' : 's'} for case ${data.caseNumber || caseNumber}.`
+        `Loaded ${data.fields.length} field${data.fields.length === 1 ? '' : 's'} for ${data.caseNumber || searchKey}.`
       );
-
     } catch (err) {
       console.error(err);
       setStatus_('error', 'Lookup error', getErrorMessage_(err));
@@ -143,94 +130,28 @@ function bindEvents_() {
     }
   }
 
-  function getKeyFromParentUrl_(preferredParamName) {
-  const names = [
-    preferredParamName,
-    'caseNum',
-    'caseNumber',
-    'case',
-    'key'
-  ].filter(Boolean);
+  function getWidgetSettings_() {
+    const settings = {
+      lookupEndpoint: getSetting_('lookupEndpoint'),
+      token: getSetting_('token'),
+      keyParamName: getSetting_('keyParamName') || 'caseNumber',
+      mode: getSetting_('mode') || 'manual'
+    };
 
-  // Attempt 1: direct parent access
-  try {
-    const parentSearch = window.parent.location.search;
-    console.log('Parent search:', parentSearch);
-
-    const params = new URLSearchParams(parentSearch);
-
-    for (const name of names) {
-      const value = clean_(params.get(name));
-      if (value) return value;
-    }
-  } catch (err) {
-    console.warn('Could not access window.parent.location.search:', err);
+    console.log('Widget settings:', settings);
+    return Promise.resolve(settings);
   }
 
-  // Attempt 2: parent full href
-  try {
-    const parentHref = window.parent.location.href;
-    console.log('Parent href:', parentHref);
-
-    const url = new URL(parentHref);
-
-    for (const name of names) {
-      const value = clean_(url.searchParams.get(name));
-      if (value) return value;
-    }
-  } catch (err) {
-    console.warn('Could not access window.parent.location.href:', err);
-  }
-
-  return '';
-}
-
-  function getCaseNumberFromParentReferrer_(preferredParamName) {
+  function getSetting_(name) {
     try {
-      const referrer = document.referrer;
-      console.log('Document referrer:', referrer);
-
-      if (!referrer) return '';
-
-      const url = new URL(referrer);
-      const params = new URLSearchParams(url.search);
-
-      return (
-        clean_(params.get(preferredParamName)) ||
-        clean_(params.get('caseNum')) ||
-        clean_(params.get('caseNumber')) ||
-        clean_(params.get('case')) ||
-        clean_(params.get('key')) ||
-        ''
-      );
+      const value = JFCustomWidget.getWidgetSetting(name);
+      console.log(`Setting ${name}:`, value);
+      return clean_(value);
     } catch (err) {
-      console.warn('Could not read parent referrer:', err);
+      console.warn(`Could not read setting ${name}:`, err);
       return '';
     }
   }
-
-function getWidgetSettings_() {
-  const settings = {
-    lookupEndpoint: getSetting_('lookupEndpoint'),
-    token: getSetting_('token'),
-    keyParamName: getSetting_('keyParamName') || 'caseNumber',
-    mode: getSetting_('mode') || 'manual'
-  };
-
-  console.log('Widget settings:', settings);
-  return Promise.resolve(settings);
-}
-
-function getSetting_(name) {
-  try {
-    const value = JFCustomWidget.getWidgetSetting(name);
-    console.log(`Setting ${name}:`, value);
-    return clean_(value);
-  } catch (err) {
-    console.warn(`Could not read setting ${name}:`, err);
-    return '';
-  }
-}
 
   function normalizeSettings_(settings) {
     return {
@@ -249,18 +170,17 @@ function getSetting_(name) {
     } else {
       inputSection.classList.remove('hidden');
     }
-
   }
 
-function getCaseNumberFromUrl_(preferredParamName) {
-  return (
-    getQueryParam_(preferredParamName) ||
-    getQueryParam_('caseNumber') ||
-    getQueryParam_('case') ||
-    getQueryParam_('caseNum') ||
-    getQueryParam_('key')
-  );
-}
+  function getSearchKeyFromWidgetUrl_(preferredParamName) {
+    return (
+      getQueryParam_(preferredParamName) ||
+      getQueryParam_('caseNumber') ||
+      getQueryParam_('case') ||
+      getQueryParam_('caseNum') ||
+      getQueryParam_('key')
+    );
+  }
 
   function getQueryParam_(name) {
     if (!name) return '';
@@ -311,7 +231,6 @@ function getCaseNumberFromUrl_(preferredParamName) {
     icon.textContent = icons[type] || 'ℹ️';
     titleEl.textContent = title || '';
     messageEl.textContent = message || '';
-
   }
 
   function clean_(value) {
