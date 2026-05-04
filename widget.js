@@ -15,15 +15,20 @@
 
       configureMode_(widgetSettings.mode);
 
+      const fieldValue = await getSearchKeyFromFieldId_(widgetSettings.keyFieldId);
       const iframeUrlValue = getSearchKeyFromWidgetUrl_(widgetSettings.keyParamName);
 
+      const autoSearchKey = fieldValue || iframeUrlValue;
+
       console.log('Auto lookup values:', {
-        iframeUrlValue
+        fieldValue,
+        iframeUrlValue,
+        autoSearchKey
       });
 
-      if (iframeUrlValue) {
-        document.getElementById('caseInput').value = iframeUrlValue;
-        await runLookup_(iframeUrlValue);
+      if (autoSearchKey) {
+        document.getElementById('caseInput').value = autoSearchKey;
+        await runLookup_(autoSearchKey);
       }
     } catch (err) {
       console.error(err);
@@ -60,6 +65,35 @@
       if (event.key === 'Enter') {
         event.preventDefault();
         searchBtn.click();
+      }
+    });
+  }
+
+  function getSearchKeyFromFieldId_(fieldId) {
+    return new Promise((resolve) => {
+      if (
+        !fieldId ||
+        typeof JFCustomWidget.getFieldsValueById !== 'function'
+      ) {
+        resolve('');
+        return;
+      }
+
+      try {
+        JFCustomWidget.getFieldsValueById([String(fieldId)], function (response) {
+          console.log('Field value response:', response);
+
+          const value =
+            response &&
+            response.data &&
+            response.data[0] &&
+            response.data[0].value;
+
+          resolve(clean_(value));
+        });
+      } catch (err) {
+        console.warn('Could not read key field by ID:', err);
+        resolve('');
       }
     });
   }
@@ -136,6 +170,7 @@
       lookupEndpoint: getSetting_('lookupEndpoint'),
       token: getSetting_('token'),
       keyParamName: getSetting_('keyParamName') || 'caseNumber',
+      keyFieldId: getSetting_('keyFieldId'),
       mode: getSetting_('mode') || 'manual'
     };
 
