@@ -13,17 +13,23 @@
 
       configureMode_(widgetSettings.mode);
 
-      const widgetValue = await getPrefilledWidgetValue_();
+      const parentUrlValue = getKeyFromParentUrl_(widgetSettings.keyParamName);
       const referrerValue = getCaseNumberFromParentReferrer_(widgetSettings.keyParamName);
       const iframeUrlValue = getCaseNumberFromUrl_(widgetSettings.keyParamName);
+      const widgetValue = await getPrefilledWidgetValue_();
 
-      const autoSearchKey = widgetValue || referrerValue || iframeUrlValue;
+      const autoCaseNumber =
+        parentUrlValue ||
+        referrerValue ||
+        iframeUrlValue ||
+        widgetValue;
 
       console.log('Auto lookup values:', {
-        widgetValue,
+        parentUrlValue,
         referrerValue,
         iframeUrlValue,
-        autoSearchKey
+        widgetValue,
+        autoCaseNumber
       });
 
       if (autoSearchKey) {
@@ -165,6 +171,48 @@ function getPrefilledWidgetValue_() {
       finish('');
     }
   });
+}
+
+  function getKeyFromParentUrl_(preferredParamName) {
+  const names = [
+    preferredParamName,
+    'caseNum',
+    'caseNumber',
+    'case',
+    'key'
+  ].filter(Boolean);
+
+  // Attempt 1: direct parent access
+  try {
+    const parentSearch = window.parent.location.search;
+    console.log('Parent search:', parentSearch);
+
+    const params = new URLSearchParams(parentSearch);
+
+    for (const name of names) {
+      const value = clean_(params.get(name));
+      if (value) return value;
+    }
+  } catch (err) {
+    console.warn('Could not access window.parent.location.search:', err);
+  }
+
+  // Attempt 2: parent full href
+  try {
+    const parentHref = window.parent.location.href;
+    console.log('Parent href:', parentHref);
+
+    const url = new URL(parentHref);
+
+    for (const name of names) {
+      const value = clean_(url.searchParams.get(name));
+      if (value) return value;
+    }
+  } catch (err) {
+    console.warn('Could not access window.parent.location.href:', err);
+  }
+
+  return '';
 }
 
   function getCaseNumberFromParentReferrer_(preferredParamName) {
