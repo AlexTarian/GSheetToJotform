@@ -15,10 +15,7 @@
 
       configureMode_(widgetSettings.mode);
 
-      const fieldValue = await getSearchKeyFromFieldId_(widgetSettings.keyFieldId);
-      const iframeUrlValue = getSearchKeyFromWidgetUrl_(widgetSettings.keyParamName);
-
-      const autoSearchKey = fieldValue || iframeUrlValue;
+      const autoSearchKey = await getSearchKeyFromFieldId_(widgetSettings.keyFieldId);
 
       console.log('Auto lookup values:', {
         fieldValue,
@@ -28,7 +25,16 @@
 
       if (autoSearchKey) {
         document.getElementById('caseInput').value = autoSearchKey;
-        await runLookup_(autoSearchKey);
+
+        if (widgetSettings.mode === 'auto') {
+          await runLookup_(autoSearchKey);
+        } else {
+          setStatus_(
+            'ready',
+            'Prefilled',
+            'Search key loaded. Click Search to continue.'
+          );
+        }
       }
     } catch (err) {
       console.error(err);
@@ -215,21 +221,11 @@
   function configureMode_(mode) {
     const inputSection = document.getElementById('inputSection');
 
-    if (mode === 'auto' || mode === 'hidden') {
+    if (mode === 'auto') {
       inputSection.classList.add('hidden');
     } else {
       inputSection.classList.remove('hidden');
     }
-  }
-
-  function getSearchKeyFromWidgetUrl_(preferredParamName) {
-    return (
-      getQueryParam_(preferredParamName) ||
-      getQueryParam_('caseNumber') ||
-      getQueryParam_('case') ||
-      getQueryParam_('caseNum') ||
-      getQueryParam_('key')
-    );
   }
 
   function getQueryParam_(name) {
