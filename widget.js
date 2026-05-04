@@ -69,33 +69,46 @@
     });
   }
 
-  function getSearchKeyFromFieldId_(fieldId) {
-    return new Promise((resolve) => {
-      if (
-        !fieldId ||
-        typeof JFCustomWidget.getFieldsValueById !== 'function'
-      ) {
-        resolve('');
-        return;
-      }
+  async function getSearchKeyFromFieldId_(fieldId) {
+    const cleanFieldId = String(fieldId || '').replace(/\D/g, '');
 
-      try {
-        JFCustomWidget.getFieldsValueById([String(fieldId)], function (response) {
-          console.log('Field value response:', response);
+    if (!cleanFieldId || typeof JFCustomWidget.getFieldsValueById !== 'function') {
+      console.warn('Missing fieldId or getFieldsValueById unavailable:', fieldId);
+      return '';
+    }
 
-          const value =
-            response &&
-            response.data &&
-            response.data[0] &&
-            response.data[0].value;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const value = await new Promise((resolve) => {
+        try {
+          JFCustomWidget.getFieldsValueById([cleanFieldId], function (response) {
+            console.log(`Field value response attempt ${attempt}:`, response);
 
-          resolve(clean_(value));
-        });
-      } catch (err) {
-        console.warn('Could not read key field by ID:', err);
-        resolve('');
-      }
-    });
+            const data = Array.isArray(response?.data) ? response.data : [];
+
+            const match = data.find(item =>
+              String(item?.selector) === cleanFieldId ||
+              String(item?.selector) === `input_${cleanFieldId}` ||
+              String(item?.selector).includes(cleanFieldId)
+            );
+
+            resolve(clean_(match?.value || data[0]?.value || ''));
+          });
+        } catch (err) {
+          console.warn('Could not read key field by ID:', err);
+          resolve('');
+        }
+      });
+
+      if (value) return value;
+
+      await sleep_(250);
+    }
+
+    return '';
+  }
+
+  function sleep_(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   async function runLookup_(searchKey) {
