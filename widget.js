@@ -1,3 +1,4 @@
+// widget.js
 (function () {
   const DEFAULT_ACTION = 'lookupcase';
 
