@@ -18,8 +18,7 @@
       const autoSearchKey = await getSearchKeyFromFieldId_(widgetSettings.keyFieldId);
 
       console.log('Auto lookup values:', {
-        fieldValue,
-        iframeUrlValue,
+        keyFieldId: widgetSettings.keyFieldId,
         autoSearchKey
       });
 
