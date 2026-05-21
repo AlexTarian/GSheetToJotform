@@ -135,7 +135,7 @@
       setStatus_('loading', 'Searching...', `Looking up ${searchKey}.`);
 
       const lookupUrl = buildLookupUrl_(lookupEndpoint, {
-        action: DEFAULT_ACTION,
+        action: widgetSettings.action,
         caseNumber: searchKey,
         token
       });
@@ -187,6 +187,7 @@
     const settings = {
       lookupEndpoint: getSetting_('lookupEndpoint'),
       token: getSetting_('token'),
+      action: getSetting_('action') || DEFAULT_ACTION,
       keyParamName: getSetting_('keyParamName') || 'caseNumber',
       keyFieldId: getSetting_('keyFieldId'),
       mode: getSetting_('mode') || 'manual'
@@ -211,6 +212,7 @@
     return {
       lookupEndpoint: clean_(settings.lookupEndpoint),
       token: clean_(settings.token),
+      action: clean_(settings.action).toLowerCase() || DEFAULT_ACTION,
       keyParamName: clean_(settings.keyParamName) || 'caseNumber',
       keyFieldId: clean_(settings.keyFieldId),
       mode: clean_(settings.mode).toLowerCase() || 'manual'
