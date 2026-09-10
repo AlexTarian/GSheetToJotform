@@ -54,7 +54,6 @@
     }
 
     searchBtn.addEventListener('click', async function () {
-      console.log('Search clicked');
 
       const searchKey = clean_(caseInput.value);
 
@@ -140,8 +139,6 @@
         token
       });
 
-      console.log('Lookup URL:', lookupUrl);
-
       const response = await fetch(lookupUrl, {
         method: 'GET',
         cache: 'no-store'
@@ -153,17 +150,6 @@
       }
 
       const data = await response.json();
-
-      console.log("RAW LOOKUP DATA:", data);
-
-      data.fields?.forEach(field => {
-        if (/worksite|housing/i.test(field.label)) {
-          console.log(
-            `RETURNED ${field.label}:`,
-            JSON.stringify(field.value)
-          );
-        }
-      });
 
       if (!data || !data.ok) {
         setStatus_('error', 'Key lookup failed', data && data.error ? data.error : 'Unknown lookup error.');
