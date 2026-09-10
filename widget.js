@@ -154,6 +154,17 @@
 
       const data = await response.json();
 
+      console.log("RAW LOOKUP DATA:", data);
+
+      data.fields?.forEach(field => {
+        if (/worksite|housing/i.test(field.label)) {
+          console.log(
+            `RETURNED ${field.label}:`,
+            JSON.stringify(field.value)
+          );
+        }
+      });
+
       if (!data || !data.ok) {
         setStatus_('error', 'Key lookup failed', data && data.error ? data.error : 'Unknown lookup error.');
         return;
