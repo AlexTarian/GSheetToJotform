@@ -144,6 +144,7 @@
     }
 
     lookupInProgress = true;
+    console.warn('[PREFILL] LOOKUP STARTED:', new Date().toISOString());
 
     try {
       const lookupEndpoint = clean_(widgetSettings.lookupEndpoint);
@@ -194,7 +195,7 @@
         return;
       }
 
-      console.warn('[PREFILL] APPLYING LOOKUP DATA:', new Date().toISOString());
+      console.warn('[PREFILL] WRITING FIELDS:', new Date().toISOString());
       JFCustomWidget.setFieldsValueByLabel(data.fields);
 
       setStatus_(
