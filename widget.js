@@ -28,7 +28,7 @@
         document.getElementById('caseInput').value = autoSearchKey;
 
         if (widgetSettings.mode === 'auto') {
-          const completed = await getFieldValueByLabel_('Prefill Completed');
+          const completed = await getFieldValueById_('543');
 
           if (completed.toUpperCase() !== 'YES' && !prefillApplied) {
             await runLookup_(autoSearchKey);
@@ -50,11 +50,17 @@
     }
   });
 
-  function getFieldValueByLabel_(label) {
+  function getFieldValueById_(fieldId) {
     return new Promise(resolve => {
-      JFCustomWidget.getFieldsValueByLabel([label], response => {
+      const id = String(fieldId).replace(/\D/g, '');
+
+      JFCustomWidget.getFieldsValueById([id], response => {
         const data = Array.isArray(response?.data) ? response.data : [];
-        const match = data.find(item => item.label === label);
+        const match = data.find(item =>
+          String(item?.selector) === id ||
+          String(item?.selector) === `input_${id}`
+        );
+
         resolve(clean_(match?.value));
       });
     });
