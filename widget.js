@@ -5,9 +5,17 @@
   let widgetSettings = {};
   let eventsBound = false;
   let lookupInProgress = false;
-  let prefillApplied = false;
+  let initialized = false;
 
   JFCustomWidget.subscribe('ready', async function () {
+    if (initialized) {
+      console.log('Widget already initialized. Skipping.');
+      return;
+    }
+
+    initialized = true;
+    console.log('Prefill Widget initialized.');
+
     try {
       bindEvents_();
 
@@ -28,20 +36,9 @@
         document.getElementById('caseInput').value = autoSearchKey;
 
         if (widgetSettings.mode === 'auto') {
-          const completed = await getFieldValueById_('543');
-
-          if (completed.toUpperCase() !== 'YES' && !prefillApplied) {
-            await runLookup_(autoSearchKey);
-          } else {
-            console.log('Prefill already completed. Skipping lookup.');
-            setStatus_('success', 'Already Loaded', 'Previous case data has already been loaded.');
-          }
+          await runLookup_(autoSearchKey);
         } else {
-          setStatus_(
-            'ready',
-            'Prefilled',
-            'Search key loaded. Click Search to continue.'
-          );
+          setStatus_('ready', 'Prefilled', 'Search key loaded. Click Search to continue.');
         }
       }
     } catch (err) {
@@ -196,12 +193,7 @@
         return;
       }
 
-      JFCustomWidget.setFieldsValueByLabel([
-        ...data.fields.filter(field => field.label !== 'Prefill Completed'),
-        { label: 'Prefill Completed', value: 'YES' }
-      ]);
-
-      prefillApplied = true;
+      JFCustomWidget.setFieldsValueByLabel(data.fields);
 
       setStatus_(
         'success',
