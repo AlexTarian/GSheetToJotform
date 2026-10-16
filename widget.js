@@ -14,7 +14,8 @@
     }
 
     initialized = true;
-    console.log('Prefill Widget initialized.');
+    console.log('[PREFILL] Widget initialized at:', new Date().toISOString());
+    console.count('[PREFILL] Initialization count');
 
     try {
       bindEvents_();
@@ -193,6 +194,7 @@
         return;
       }
 
+      console.warn('[PREFILL] APPLYING LOOKUP DATA:', new Date().toISOString());
       JFCustomWidget.setFieldsValueByLabel(data.fields);
 
       setStatus_(
