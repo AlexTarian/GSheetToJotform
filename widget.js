@@ -4,6 +4,8 @@
 
   let widgetSettings = {};
   let eventsBound = false;
+  let lookupInProgress = false;
+  let prefillApplied = false;
 
   JFCustomWidget.subscribe('ready', async function () {
     try {
@@ -26,7 +28,14 @@
         document.getElementById('caseInput').value = autoSearchKey;
 
         if (widgetSettings.mode === 'auto') {
-          await runLookup_(autoSearchKey);
+          const completed = await getFieldValueByLabel_('Prefill Completed');
+
+          if (completed.toUpperCase() !== 'YES' && !prefillApplied) {
+            await runLookup_(autoSearchKey);
+          } else {
+            console.log('Prefill already completed. Skipping lookup.');
+            setStatus_('success', 'Already Loaded', 'Previous case data has already been loaded.');
+          }
         } else {
           setStatus_(
             'ready',
@@ -41,6 +50,16 @@
     }
   });
 
+  function getFieldValueByLabel_(label) {
+    return new Promise(resolve => {
+      JFCustomWidget.getFieldsValueByLabel([label], response => {
+        const data = Array.isArray(response?.data) ? response.data : [];
+        const match = data.find(item => item.label === label);
+        resolve(clean_(match?.value));
+      });
+    });
+  }
+  
   function bindEvents_() {
     if (eventsBound) return;
     eventsBound = true;
@@ -91,11 +110,10 @@
 
             const match = data.find(item =>
               String(item?.selector) === cleanFieldId ||
-              String(item?.selector) === `input_${cleanFieldId}` ||
-              String(item?.selector).includes(cleanFieldId)
+              String(item?.selector) === `input_${cleanFieldId}`
             );
 
-            resolve(clean_(match?.value || data[0]?.value || ''));
+            resolve(clean_(match?.value));
           });
         } catch (err) {
           console.warn('Could not read key field by ID:', err);
@@ -116,6 +134,13 @@
   }
 
   async function runLookup_(searchKey) {
+    if (lookupInProgress) {
+      console.log('Lookup already in progress. Skipping duplicate request.');
+      return;
+    }
+
+    lookupInProgress = true;
+
     try {
       const lookupEndpoint = clean_(widgetSettings.lookupEndpoint);
       const token = clean_(widgetSettings.token);
@@ -165,7 +190,12 @@
         return;
       }
 
-      JFCustomWidget.setFieldsValueByLabel(data.fields);
+      JFCustomWidget.setFieldsValueByLabel([
+        ...data.fields.filter(field => field.label !== 'Prefill Completed'),
+        { label: 'Prefill Completed', value: 'YES' }
+      ]);
+
+      prefillApplied = true;
 
       setStatus_(
         'success',
@@ -176,6 +206,7 @@
       console.error(err);
       setStatus_('error', 'Lookup error', getErrorMessage_(err));
     } finally {
+      lookupInProgress = false;
       setLoading_(false);
     }
   }
